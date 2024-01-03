@@ -2,6 +2,7 @@ package com.example.questionnaire
 
 import android.Manifest
 import android.content.Context
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -20,9 +22,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,9 +54,10 @@ fun DropMenu(
     // Declaring a boolean value to store
     // the expanded state of the Text Field
     var mExpanded by remember { mutableStateOf(false) }
-    val dynamicText by viewModel.dynamicText.observeAsState(q1)
+    val translatedQuestions by viewModel.translatedQuestions.collectAsState()
 
 
+    val questions by remember { mutableStateOf(listOf("How are you?", "What is your name?","What is your monthly income ?","where do you stay ?","what is your age ?")) }
     // Create a list of cities
     val mCities = listOf<Pair<String,String>>(Pair("ENGLISH","en"), Pair("KANNADA","kn"), Pair("HINDI","hi"), Pair("TAMIL","ta"),Pair("TELUGU","te"), Pair("BENGALI","bn"), Pair("GUJURATHI","gu"))
 
@@ -81,7 +87,7 @@ fun DropMenu(
                     // the DropDown the same width
                     mTextFieldSize = coordinates.size.toSize()
                 },
-            label = {Text("Label")},
+            label = {Text("Select Language")},
             trailingIcon = {
                 Icon(icon,"contentDescription",
                     Modifier.clickable { mExpanded = !mExpanded })
@@ -102,18 +108,14 @@ fun DropMenu(
                         Text(label.first)
                     },
                     onClick = {
-                        viewModel.onTranslateButtonClick(
-                            text = q1,
-                            context = context,
-                            language = label.second
-                        )
+                            for (question in questions) {
+                                viewModel.translateQuestion(question, "en", label.second,context){
+                                }
+                            }
+
                         mSelectedText = label.first
                         languageCode=label.second
-//                        Toast.makeText(
-//                            context,
-//                            languageCode,
-//                            Toast.LENGTH_SHORT
-//                        ).show()
+                        viewModel.setTranslatedQuestions(emptyList())
                         mExpanded = false
                     })
             }
@@ -126,16 +128,18 @@ fun DropMenu(
 fun MainScreen(
     viewModel: MainViewModel= viewModel()
 ) {
-    val q1 = "how are you ?"
     val state = viewModel.state.value
     val context = LocalContext.current
-    val dynamicText by viewModel.dynamicText.observeAsState(q1)
     val permissionState = rememberPermissionState(
         permission = Manifest.permission.RECORD_AUDIO
     )
-    var mSelectedText by remember { mutableStateOf("") }
     val languageCode by viewModel.languageCode.observeAsState("en")
 
+
+    val translatedQuestions by viewModel.translatedQuestions.collectAsState()
+
+
+    // Use a coroutine to perform translations
 
     SideEffect {
         permissionState.launchPermissionRequest()
@@ -143,10 +147,21 @@ fun MainScreen(
 
     val speechRecognizerLauncher = rememberLauncherForActivityResult(
         contract = SpeechRecognizerContract(languageCode),
-        onResult = {
-            viewModel.changeTextValue(it.toString())
+        onResult = { result ->
+            result?.let { (indexStr, recognizedText) ->
+                val index = indexStr?.toIntOrNull()
+                if (index != null && recognizedText != null && index in 0 until translatedQuestions.size) {
+                    val clickedQuestion = translatedQuestions[index]
+                    viewModel.updateTextField(clickedQuestion, recognizedText)
+                }
+            }
         }
     )
+
+
+    val textFields: Map<String, String> = viewModel.textFields
+
+
 
     Column(
         modifier = Modifier
@@ -155,39 +170,44 @@ fun MainScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
           DropMenu()
-        Text(
-            text = dynamicText,
-            modifier = Modifier.padding(bottom = 7.dp)
-        )
-        Button(
-            onClick = {
-                viewModel.textToSpeech(context)
-            },
-            enabled = state.isButtonSpeakEnabled,
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Text(text = "Speak")
-        }
-        TextField(
-            value = state.text,
-            onValueChange = {
+        LazyColumn {
+            items(translatedQuestions.size) {index ->
+                val translatedQuestion = translatedQuestions.getOrNull(index)
 
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 7.dp)
-        )
-        Button(onClick = {
-            if (permissionState.status.isGranted) {
-                speechRecognizerLauncher.launch(Unit)
-            } else
-                permissionState.launchPermissionRequest()
-        }) {
-            Text(text = "Speak")
+                if (translatedQuestion != null) {
+                    Text(
+                        text = translatedQuestion,
+                        modifier = Modifier.padding(bottom = 7.dp)
+                    )
+
+                    Button(
+                        onClick = {
+                            viewModel.textToSpeech(context, translatedQuestion, languageCode)
+                        },
+                        enabled = state.isButtonSpeakEnabled,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Text(text = "Speak")
+                    }
+                    TextField(
+                        value = textFields[translatedQuestion] ?: "",
+                        onValueChange = { newValue ->
+                            // If you want to handle user input changes
+                            viewModel.updateTextField(translatedQuestion, newValue)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 7.dp)
+                    )
+                    Button(onClick = {
+                        speechRecognizerLauncher.launch(Unit)
+                    }) {
+                        Text(text = "mic")
+                    }
+                }
+            }
         }
     }
-
-
 }
 

@@ -5,6 +5,7 @@ import android.speech.tts.TextToSpeech
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -15,6 +16,8 @@ import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.*
 import java.util.Locale.ENGLISH
@@ -28,7 +31,22 @@ class MainViewModel:ViewModel() {
     val dynamicText: LiveData<String> get() = _dynamicText
     private val _languageCode = MutableLiveData<String>()
     val languageCode: LiveData<String> get() = _languageCode
+    private val _textFields = mutableMapOf<String, String>()
+    val textFields: Map<String, String> get() = _textFields
 
+    private var _translatedQuestions = MutableStateFlow<List<String>>(emptyList())
+    val translatedQuestions: StateFlow<List<String>> get() = _translatedQuestions
+
+    fun addTranslatedQuestion(question: String) {
+        _translatedQuestions.value = _translatedQuestions.value + question
+    }
+    fun setTranslatedQuestions(questions: List<String>) {
+        _translatedQuestions.value = questions
+    }
+    // Example function to update a text field
+    fun updateTextField(question: String, recognizedText: String) {
+        _textFields[question] = recognizedText
+    }
     fun setLanguageCode(code: String) {
         _languageCode.value = code
     }
@@ -47,31 +65,31 @@ class MainViewModel:ViewModel() {
             )
         }
     }
-    fun onTranslateButtonClick(
-        text: String,
+    fun translateQuestion(
+        question: String,
+        language: String,
+        targetLanguage: String,
         context: Context,
-        language: String
+        callback: (String) -> Unit
     ) {
-       setLanguageCode(language)
+
+        setLanguageCode(language)
         val options = TranslatorOptions
             .Builder()
-            .setSourceLanguage(TranslateLanguage.ENGLISH)
-            .setTargetLanguage(language)
+            .setSourceLanguage(language)
+            .setTargetLanguage(targetLanguage)
             .build()
 
         val languageTranslator = Translation
             .getClient(options)
 
-        languageTranslator.translate(text)
+        languageTranslator.translate(question)
             .addOnSuccessListener { translatedText ->
-//                _state.value = state.value.copy(
-//                    translatedText = translatedText
-//                )
-                _dynamicText.value = translatedText
-//
+                addTranslatedQuestion(translatedText)
+                callback(translatedText)
+
             }
             .addOnFailureListener {
-
                 Toast.makeText(
                     context,
                     "Downloading started..",
@@ -80,6 +98,7 @@ class MainViewModel:ViewModel() {
                 downloadModelIfNotAvailable(languageTranslator, context)
             }
     }
+
 
     private fun downloadModelIfNotAvailable(
         languageTranslator: Translator,
@@ -122,7 +141,7 @@ class MainViewModel:ViewModel() {
 //        )
 //    }
 
-    fun textToSpeech(context: Context){
+    fun textToSpeech(context: Context, question: String,languageCode:String){
 
         _state.value = state.value.copy(
             isButtonSpeakEnabled = false
@@ -132,10 +151,10 @@ class MainViewModel:ViewModel() {
         ) {
             if (it == TextToSpeech.SUCCESS) {
                 textToSpeech?.let { txtToSpeech ->
-                    txtToSpeech.language = _languageCode.value?.let { it1 -> Locale(it1,"IN") }
+                    txtToSpeech.language = Locale(languageCode,"IN")
                     txtToSpeech.setSpeechRate(1.0f)
                     txtToSpeech.speak(
-                        dynamicText.value,
+                        question,
                         TextToSpeech.QUEUE_ADD,
                         null,
                         null
