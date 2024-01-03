@@ -6,7 +6,7 @@ import android.content.Intent
 import android.speech.RecognizerIntent
 import androidx.activity.result.contract.ActivityResultContract
 
-class SpeechRecognizerContract: ActivityResultContract<Unit, ArrayList<String>?>() {
+class SpeechRecognizerContract(private val languageCode: String): ActivityResultContract<Unit, ArrayList<String>?>() {
     override fun createIntent(context: Context, input: Unit): Intent {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(
@@ -14,7 +14,7 @@ class SpeechRecognizerContract: ActivityResultContract<Unit, ArrayList<String>?>
             RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
         intent.putExtra(
             RecognizerIntent.EXTRA_LANGUAGE,
-            "kn-IN"
+            languageCode
         )
         intent.putExtra(
             RecognizerIntent.EXTRA_PROMPT,

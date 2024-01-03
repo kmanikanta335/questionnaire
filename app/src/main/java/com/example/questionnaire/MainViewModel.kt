@@ -3,6 +3,7 @@ package com.example.questionnaire
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
@@ -16,6 +17,7 @@ import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
 import kotlinx.coroutines.launch
 import java.util.*
+import java.util.Locale.ENGLISH
 
 class MainViewModel:ViewModel() {
 
@@ -24,6 +26,12 @@ class MainViewModel:ViewModel() {
     private  var  textToSpeech: TextToSpeech? = null
     private val _dynamicText = MutableLiveData<String>()
     val dynamicText: LiveData<String> get() = _dynamicText
+    private val _languageCode = MutableLiveData<String>()
+    val languageCode: LiveData<String> get() = _languageCode
+
+    fun setLanguageCode(code: String) {
+        _languageCode.value = code
+    }
 //    fun onTextToBeTranslatedChange(text: String) {
 //        _state.value = state.value.copy(
 //            textToBeTranslated = text
@@ -41,13 +49,14 @@ class MainViewModel:ViewModel() {
     }
     fun onTranslateButtonClick(
         text: String,
-        context: Context
+        context: Context,
+        language: String
     ) {
-
+       setLanguageCode(language)
         val options = TranslatorOptions
             .Builder()
             .setSourceLanguage(TranslateLanguage.ENGLISH)
-            .setTargetLanguage(TranslateLanguage.KANNADA)
+            .setTargetLanguage(language)
             .build()
 
         val languageTranslator = Translation
@@ -70,7 +79,6 @@ class MainViewModel:ViewModel() {
                 ).show()
                 downloadModelIfNotAvailable(languageTranslator, context)
             }
-
     }
 
     private fun downloadModelIfNotAvailable(
@@ -124,7 +132,7 @@ class MainViewModel:ViewModel() {
         ) {
             if (it == TextToSpeech.SUCCESS) {
                 textToSpeech?.let { txtToSpeech ->
-                    txtToSpeech.language = Locale("kn","IN")
+                    txtToSpeech.language = _languageCode.value?.let { it1 -> Locale(it1,"IN") }
                     txtToSpeech.setSpeechRate(1.0f)
                     txtToSpeech.speak(
                         dynamicText.value,
