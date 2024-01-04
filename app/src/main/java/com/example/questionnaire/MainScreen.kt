@@ -57,13 +57,14 @@ fun DropMenu(
     val translatedQuestions by viewModel.translatedQuestions.collectAsState()
 
 
+
     val questions by remember { mutableStateOf(listOf("How are you?", "What is your name?","What is your monthly income ?","where do you stay ?","what is your age ?")) }
     // Create a list of cities
     val mCities = listOf<Pair<String,String>>(Pair("ENGLISH","en"), Pair("KANNADA","kn"), Pair("HINDI","hi"), Pair("TAMIL","ta"),Pair("TELUGU","te"), Pair("BENGALI","bn"), Pair("GUJURATHI","gu"))
 
     // Create a string value to store the selected city
     var mSelectedText by remember { mutableStateOf("") }
-    var languageCode by remember { mutableStateOf("") }
+    val languageCode by viewModel.languageCode.observeAsState("en")
 
     var mTextFieldSize by remember { mutableStateOf(composeSize.Zero)}
 
@@ -114,7 +115,7 @@ fun DropMenu(
                             }
 
                         mSelectedText = label.first
-                        languageCode=label.second
+                        viewModel.setLanguageCode(label.second)
                         viewModel.setTranslatedQuestions(emptyList())
                         mExpanded = false
                     })
@@ -130,6 +131,8 @@ fun MainScreen(
 ) {
     val state = viewModel.state.value
     val context = LocalContext.current
+
+
     val permissionState = rememberPermissionState(
         permission = Manifest.permission.RECORD_AUDIO
     )
@@ -145,23 +148,6 @@ fun MainScreen(
         permissionState.launchPermissionRequest()
     }
 
-    val speechRecognizerLauncher = rememberLauncherForActivityResult(
-        contract = SpeechRecognizerContract(languageCode),
-        onResult = { result ->
-            result?.let { (indexStr, recognizedText) ->
-                val index = indexStr?.toIntOrNull()
-                if (index != null && recognizedText != null && index in 0 until translatedQuestions.size) {
-                    val clickedQuestion = translatedQuestions[index]
-                    viewModel.updateTextField(clickedQuestion, recognizedText)
-                }
-            }
-        }
-    )
-
-
-    val textFields: Map<String, String> = viewModel.textFields
-
-
 
     Column(
         modifier = Modifier
@@ -172,6 +158,12 @@ fun MainScreen(
           DropMenu()
         LazyColumn {
             items(translatedQuestions.size) {index ->
+                val speechRecognizerLauncher = rememberLauncherForActivityResult(
+                    contract = SpeechRecognizerContract(languageCode),
+                    onResult = {
+                        viewModel.changeTextValue(it.toString(),index)
+                    }
+                )
                 val translatedQuestion = translatedQuestions.getOrNull(index)
 
                 if (translatedQuestion != null) {
@@ -190,18 +182,25 @@ fun MainScreen(
                     ) {
                         Text(text = "Speak")
                     }
+
+
                     TextField(
-                        value = textFields[translatedQuestion] ?: "",
-                        onValueChange = { newValue ->
-                            // If you want to handle user input changes
-                            viewModel.updateTextField(translatedQuestion, newValue)
+                        value = state.textFields[index] ?: "",
+                        onValueChange = {
+                            viewModel.updateTextField(it, index)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 7.dp)
                     )
+
                     Button(onClick = {
                         speechRecognizerLauncher.launch(Unit)
+//                        Toast.makeText(
+//                            context,
+//                            textFields["What is your name?"] ?: "",
+//                            Toast.LENGTH_SHORT
+//                        ).show()
                     }) {
                         Text(text = "mic")
                     }

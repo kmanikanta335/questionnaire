@@ -5,8 +5,10 @@ import android.speech.tts.TextToSpeech
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -31,8 +33,6 @@ class MainViewModel:ViewModel() {
     val dynamicText: LiveData<String> get() = _dynamicText
     private val _languageCode = MutableLiveData<String>()
     val languageCode: LiveData<String> get() = _languageCode
-    private val _textFields = mutableMapOf<String, String>()
-    val textFields: Map<String, String> get() = _textFields
 
     private var _translatedQuestions = MutableStateFlow<List<String>>(emptyList())
     val translatedQuestions: StateFlow<List<String>> get() = _translatedQuestions
@@ -44,9 +44,6 @@ class MainViewModel:ViewModel() {
         _translatedQuestions.value = questions
     }
     // Example function to update a text field
-    fun updateTextField(question: String, recognizedText: String) {
-        _textFields[question] = recognizedText
-    }
     fun setLanguageCode(code: String) {
         _languageCode.value = code
     }
@@ -58,12 +55,23 @@ class MainViewModel:ViewModel() {
 
 
 
-    fun changeTextValue(text:String){
-        viewModelScope.launch {
-            _state.value = state.value.copy(
-                text = text
-            )
-        }
+    //val textFields: MutableList<String> = MutableList(translatedQuestions.value.size) { "" }
+
+    // Function to change the text value for a specific index
+    fun changeTextValue(text: String, index: Int) {
+        _state.value = state.value.copy(
+            textFields = state.value.textFields.toMutableList().apply {
+                set(index, text)
+            }
+        )
+    }
+    // Function to update the text in a specific TextField
+    fun updateTextField(text: String, index: Int) {
+        _state.value = state.value.copy(
+            textFields = state.value.textFields.toMutableList().apply {
+                set(index, text)
+            }
+        )
     }
     fun translateQuestion(
         question: String,

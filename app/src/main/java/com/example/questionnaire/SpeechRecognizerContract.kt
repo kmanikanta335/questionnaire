@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.speech.RecognizerIntent
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContract
 
 class SpeechRecognizerContract(private val languageCode: String): ActivityResultContract<Unit, ArrayList<String>?>() {
@@ -20,7 +21,6 @@ class SpeechRecognizerContract(private val languageCode: String): ActivityResult
             RecognizerIntent.EXTRA_PROMPT,
             "Speak Something"
         )
-
         return intent
     }
     override fun parseResult(resultCode: Int, intent: Intent?): ArrayList<String>? {
