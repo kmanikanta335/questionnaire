@@ -1,0 +1,108 @@
+[
+    {
+      "id": 1,
+      "ques": "Are You employed?",
+      "type": "bool",
+      "options": ["YES","NO"],
+      "sub1": {
+        "id": 2,
+        "ques": "Please state your monthly income",
+        "type": "num"
+      }
+    },
+    {
+      "id": 3,
+      "ques": "Please select your state of residence",
+      "type": "obj",
+      "options": [
+        "Andhra Pradesh",
+        "Arunachal Pradesh",
+        "Assam",
+        "Bihar",
+        "Chhattisgarh",
+        "Goa",
+        "Gujarat",
+        "Haryana",
+        "Himachal Pradesh",
+        "Jharkhand",
+        "Karnataka",
+        "Kerala",
+        "Madhya Pradesh",
+        "Maharashtra",
+        "Manipur",
+        "Meghalaya",
+        "Mizoram",
+        "Nagaland",
+        "Odisha",
+        "Punjab",
+        "Rajasthan",
+        "Sikkim",
+        "Tamil Nadu",
+        "Telangana",
+        "Tripura",
+        "Uttar Pradesh",
+        "Uttarakhand",
+        "West Bengal",
+        "Andaman and Nicobar Islands",
+        "Chandigarh",
+        "Dadra and Nagar Haveli and Daman and Diu",
+        "Delhi",
+        "Lakshadweep",
+        "Puducherry"
+      ]
+    },
+    {
+      "id": 4,
+      "ques": "Do you have a Ration card?",
+      "type": "bool",
+      "options": ["YES","NO"],
+      "sub1": {
+        "id": 5,
+        "ques": "Please select you Ration card type",
+        "type": "obj",
+        "options": [
+          "BPL",
+          "APL"
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "ques": "Do you live in a rented house?",
+      "type": "bool",
+      "options": ["YES","NO"],
+      "sub1": {
+        "id": 7,
+        "ques": "Please state your house rent",
+        "type": "num"
+      }
+    },
+
+    {
+      "id": 8,
+      "ques": "Please state the number of dependent members in your family",
+      "type": "num"
+    },
+  {
+    "id": 9,
+    "ques": "Is your spouse employed(if married)?",
+    "type": "bool",
+    "options": ["YES","NO"]
+  },
+    {
+      "id": 10,
+      "ques": "Please state the overall monthly sum of financial benefits you receive from various government schemes and policies(in rupees)",
+      "type": "num"
+    },
+    {
+      "id": 11,
+      "ques": "Please select you highest level of education",
+      "type": "obj",
+      "options": [
+        "<=10th",
+        "12th/Diploma/Equivalent",
+        "Graduate",
+        "Post Graduate"
+      ]
+    }
+]

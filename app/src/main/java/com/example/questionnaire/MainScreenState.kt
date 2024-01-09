@@ -6,5 +6,5 @@ data class MainScreenState(
     val isButtonEnabled:Boolean = true,
     val text:String = "",
     val textMap: Map<String, String> = emptyMap(),
-    val textFields: MutableList<String> = MutableList(5) { "" }
+    val textFields: MutableList<String> = MutableList(12) { "" }
 )
